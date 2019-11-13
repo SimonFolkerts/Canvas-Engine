@@ -83,7 +83,7 @@ window.onload = function () {
             this.ctx = area.ctx;
             this.acc = 1;
             this.rotVel = 2;
-            this.vel = 1;
+            this.vel = 0;
             this.x = canvas.width / 2;
             this.y = canvas.height / 2;
             this.angle = 0;
@@ -91,20 +91,35 @@ window.onload = function () {
             this.height = 30;
         }
         update(keys) {
-            // if (Object.values(keys).some(Boolean)) {
-            //     this.vel += this.acc;
             if (keys.left) {
                 this.angle += -this.rotVel;
             } else if (keys.right) {
                 this.angle += this.rotVel;
             }
             if (keys.up) {
-                this.x += this.vel * Math.cos((this.angle - 90) * Math.PI / 180);
-                this.y += this.vel * Math.sin((this.angle - 90)* Math.PI / 180);
+                if (this.vel < 30) {
+                    this.vel++
+                }
+            } else {
+                if (this.vel > 0) {
+                    this.vel--;
+                }
             }
-            // }
+            this.x += this.vel / 10 * Math.cos((this.angle - 90) * Math.PI / 180);
+            this.y += this.vel / 10 * Math.sin((this.angle - 90) * Math.PI / 180);
+            if (this.x < 0) {
+                this.x = this.canvas.width;
+            } else if (this.x > this.canvas.width) {
+                this.x = 0;
+            }
+            if (this.y < 0) {
+                this.y = this.canvas.height;
+            } else if (this.y > this.canvas.height) {
+                this.y = 0;
+            }
         }
         draw() {
+            //ctx, x, y, width, height, angle
             this.ctx.save();
             this.ctx.translate(this.x, this.y);
             this.ctx.rotate(this.angle * Math.PI / 180);
