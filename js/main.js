@@ -1,6 +1,6 @@
 window.onload = function () {
-    const EL_CANVAS = document.querySelector('#canvas'),
-        INTERVAL = 10;
+    const EL_CANVAS = document.querySelector('#canvas');
+    const INTERVAL = 10;
 
     class GameArea {
         constructor(canvas, interval) {
@@ -19,6 +19,7 @@ window.onload = function () {
         update() {
             this.counter++;
             this.ctx.clearRect(0, 0, canvas.width, canvas.height);
+            this.pieces = this.pieces.filter(piece => piece.active === true);
             for (let i = 0; i < this.pieces.length; i++) {
                 const piece = this.pieces[i];
                 piece.update(keyboardController.keys);
@@ -26,6 +27,12 @@ window.onload = function () {
             }
         }
     }
+
+    // class Renderer {
+    //     constructor (entity) {
+
+    //     }
+    // }
 
     class KeyboardController {
         constructor() {
@@ -41,7 +48,6 @@ window.onload = function () {
             target.addEventListener('keyup', this.keyUpEvent.bind(this));
         }
         keyDownEvent(event) {
-            console.log(this.keys);
             switch (event.key) {
                 case 'ArrowLeft':
                     this.keys.left = true;
@@ -58,7 +64,6 @@ window.onload = function () {
             }
         }
         keyUpEvent(event) {
-            console.log(this.keys);
             switch (event.key) {
                 case 'ArrowLeft':
                     this.keys.left = false;
@@ -78,35 +83,45 @@ window.onload = function () {
 
     class Ship {
         constructor(area) {
+            this.active = true;
             area.pieces.push(this);
+            this.area = area;
             this.canvas = area.canvas;
             this.ctx = area.ctx;
-            this.acc = 1;
             this.rotVel = 2;
-            this.vel = 0;
+            this.dx = 0;
+            this.dy = 0;
+            this.acc = 0.05;
+            this.thrust = 0;
             this.x = canvas.width / 2;
             this.y = canvas.height / 2;
             this.angle = 0;
             this.width = 10;
-            this.height = 30;
+            this.height = 15;
         }
         update(keys) {
+            if (keys.space) {
+                this.pow();
+            }
             if (keys.left) {
                 this.angle += -this.rotVel;
             } else if (keys.right) {
                 this.angle += this.rotVel;
             }
+            //make a joocy vector from angle and increment displacement per tick if thrusting
             if (keys.up) {
-                if (this.vel < 30) {
-                    this.vel++
-                }
+                this.thrust = this.acc;
+                this.dx += Math.cos((this.angle - 90) * Math.PI / 180);
+                this.dy += Math.sin((this.angle - 90) * Math.PI / 180);
             } else {
-                if (this.vel > 0) {
-                    this.vel--;
-                }
+                this.thrust = 0;
             }
-            this.x += this.vel / 10 * Math.cos((this.angle - 90) * Math.PI / 180);
-            this.y += this.vel / 10 * Math.sin((this.angle - 90) * Math.PI / 180);
+            this.x += this.dx * this.acc;
+            this.y += this.dy * this.acc;
+
+            // console.log(Math.sin(this.angle - 90) * Math.PI / 180);
+            // this.x += this.vel / 10 * Math.cos((this.angle - 90) * Math.PI / 180);
+            // this.y += this.vel / 10 * Math.sin((this.angle - 90) * Math.PI / 180);
             if (this.x < 0) {
                 this.x = this.canvas.width;
             } else if (this.x > this.canvas.width) {
@@ -119,15 +134,80 @@ window.onload = function () {
             }
         }
         draw() {
-            //ctx, x, y, width, height, angle
+            //prepare for rotation
             this.ctx.save();
             this.ctx.translate(this.x, this.y);
             this.ctx.rotate(this.angle * Math.PI / 180);
-            this.ctx.fillRect(
-                -this.width / 2,
-                -this.height / 2,
-                this.width,
-                this.height);
+            //draw shape
+
+            // this.ctx.fillRect(
+            //     -this.width / 2,
+            //     -this.height / 2,
+            //     this.width,
+            //     this.height);
+            this.ctx.lineWidth = 2;
+            this.ctx.beginPath();
+            this.ctx.moveTo(0, -this.height / 2);
+            this.ctx.lineTo(this.width / 2, this.height / 2);
+            if (this.thrust) {
+                this.ctx.lineTo(this.width / 4, this.height / 2);
+                this.ctx.lineTo(0, this.height / 1.2);
+                this.ctx.lineTo(-this.width / 4, this.height / 2);
+                this.ctx.lineTo(this.width / 4, this.height / 2);
+            }
+            this.ctx.lineTo(-this.width / 2, this.height / 2);
+            this.ctx.closePath();
+            this.ctx.stroke();
+
+            //return
+            this.ctx.restore();
+        }
+        pow() {
+            console.log(this.area.pieces);
+            let missile = new Missile(this.x, this.y, this.dx * this.acc, this.dy * this.acc, this.angle, this.area)
+        }
+    }
+
+    class Missile {
+        constructor(x, y, dx, dy, angle, area) {
+            this.active = true;
+            area.pieces.push(this);
+            this.area = area;
+            this.canvas = area.canvas;
+            this.ctx = area.ctx;
+            this.x = x;
+            this.y = y;
+            this.width = 2;
+            this.height = 4;
+            this.angle = angle;
+            this.counter = 0;
+            this.vel = 1;
+            this.dx = dx 
+            this.dy = dy 
+        }
+        update() {
+            this.counter++;
+            if (this.counter > 100) {
+                this.active = false;
+            }
+            // this.dx += Math. cos((this.angle - 90) * Math.PI / 180);
+            // this.dy += Math.sin((this.angle - 90) * Math.PI / 180);
+            this.x += this.dx;
+            this.y += this.dy;
+        }
+        draw() {
+            this.ctx.save();
+            this.ctx.translate(this.x, this.y);
+            this.ctx.rotate(this.angle * Math.PI / 180);
+
+            this.ctx.lineWidth = this.width;
+            this.ctx.beginPath();
+            this.ctx.moveTo(0, -this.height / 2);
+            this.ctx.lineTo(0, this.height / 2);
+            this.ctx.closePath();
+            this.ctx.stroke();
+
+            //return
             this.ctx.restore();
         }
     }
