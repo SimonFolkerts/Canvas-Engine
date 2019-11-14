@@ -28,12 +28,6 @@ window.onload = function () {
         }
     }
 
-    // class Renderer {
-    //     constructor (entity) {
-
-    //     }
-    // }
-
     class KeyboardController {
         constructor() {
             this.keys = {
@@ -96,11 +90,14 @@ window.onload = function () {
             this.x = canvas.width / 2;
             this.y = canvas.height / 2;
             this.angle = 0;
-            this.width = 10;
-            this.height = 15;
+            this.width = 20;
+            this.height = 30;
+            this.fireRate = 5;
+            this.canFire = true;
+            this.flikr = 1;
         }
         update(keys) {
-            if (keys.space) {
+            if (keys.space && this.canFire) {
                 this.pow();
             }
             if (keys.left) {
@@ -140,20 +137,21 @@ window.onload = function () {
             this.ctx.rotate(this.angle * Math.PI / 180);
             //draw shape
 
-            // this.ctx.fillRect(
-            //     -this.width / 2,
-            //     -this.height / 2,
-            //     this.width,
-            //     this.height);
             this.ctx.lineWidth = 2;
             this.ctx.beginPath();
             this.ctx.moveTo(0, -this.height / 2);
             this.ctx.lineTo(this.width / 2, this.height / 2);
             if (this.thrust) {
+                if (this.flikr > 0) {
+                    this.flikr--;
+                } else {
+                    this.flikr = 6
+                }
+                console.log(this.flikr);
                 this.ctx.lineTo(this.width / 4, this.height / 2);
-                this.ctx.lineTo(0, this.height / 1.2);
+                this.ctx.lineTo(0, this.height * 1.2 + this.flikr * 1.0);
                 this.ctx.lineTo(-this.width / 4, this.height / 2);
-                this.ctx.lineTo(this.width / 4, this.height / 2);
+                // this.ctx.lineTo(this.width / 4, this.height / 2);
             }
             this.ctx.lineTo(-this.width / 2, this.height / 2);
             this.ctx.closePath();
@@ -163,8 +161,11 @@ window.onload = function () {
             this.ctx.restore();
         }
         pow() {
-            console.log(this.area.pieces);
-            let missile = new Missile(this.x, this.y, this.dx * this.acc, this.dy * this.acc, this.angle, this.area)
+            let missile = new Missile(this.x, this.y, this.dx * this.acc, this.dy * this.acc, this.angle, this.area);
+            this.canFire = false;
+            setTimeout(function () {
+                this.canFire = true;
+            }.bind(this), (1 / this.fireRate) * 1000);
         }
     }
 
@@ -177,23 +178,24 @@ window.onload = function () {
             this.ctx = area.ctx;
             this.x = x;
             this.y = y;
-            this.width = 2;
-            this.height = 4;
+            this.width = 4;
+            this.height = 8;
             this.angle = angle;
             this.counter = 0;
-            this.vel = 1;
-            this.dx = dx 
-            this.dy = dy 
+            this.vel = 8;
+            this.dx = dx + (Math.cos((this.angle - 90) * Math.PI / 180)) * this.vel;
+            this.dy = dy + (Math.sin((this.angle - 90) * Math.PI / 180)) * this.vel;
         }
         update() {
             this.counter++;
-            if (this.counter > 100) {
+            if (this.counter > 500) {
                 this.active = false;
             }
-            // this.dx += Math. cos((this.angle - 90) * Math.PI / 180);
-            // this.dy += Math.sin((this.angle - 90) * Math.PI / 180);
+            this.dx += 0.5 * Math.cos((this.angle - 90) * Math.PI / 180);
+            this.dy += 0.5 * Math.sin((this.angle - 90) * Math.PI / 180);
             this.x += this.dx;
             this.y += this.dy;
+            this.height += 0.5;
         }
         draw() {
             this.ctx.save();
@@ -219,4 +221,4 @@ window.onload = function () {
     let ship = new Ship(gameArea);
 
     gameArea.start();
-}
+};
