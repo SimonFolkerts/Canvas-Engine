@@ -214,11 +214,57 @@ window.onload = function () {
         }
     }
 
+    class Roid {
+        constructor(size, area) {
+            this.active = true;
+            area.pieces.push(this);
+            this.area = area;
+            this.canvas = area.canvas;
+            this.ctx = area.ctx;
+            this.x = this.canvas.width / 2;
+            this.y = this.canvas.height / 2;
+            this.width = size;
+            this.height = size;
+            this.dx = 0;
+            this.dy = 0;
+            this.rotVel = 1;
+            this.angle = 0;
+        }
+        update() {
+            this.dx = 0.5 * Math.cos((this.angle - 90) * Math.PI / 180);
+            this.dy = 0.5 * Math.sin((this.angle - 90) * Math.PI / 180);
+            this.x += this.dx;
+            this.y += this.dy;
+            if (this.x < 0) {
+                this.x = this.canvas.width;
+            } else if (this.x > this.canvas.width) {
+                this.x = 0;
+            }
+            if (this.y < 0) {
+                this.y = this.canvas.height;
+            } else if (this.y > this.canvas.height) {
+                this.y = 0;
+            }
+        }
+        draw() {
+            this.ctx.save();
+            this.ctx.translate(this.x, this.y);
+            this.ctx.rotate(this.angle * Math.PI / 180);
+
+            this.ctx.lineWidth = this.width;
+            this.ctx.fillRect(-this.width / 2, 0, this.width, this.height);
+
+            //return
+            this.ctx.restore();
+        }
+    }
+
     let gameArea = new GameArea(EL_CANVAS, INTERVAL);
     let keyboardController = new KeyboardController();
     keyboardController.addListeners(gameArea.canvas);
 
     let ship = new Ship(gameArea);
+    let roid = new Roid(40, gameArea);
 
     gameArea.start();
 };
