@@ -28,6 +28,20 @@ window.onload = function () {
         }
     }
 
+    class Collider {
+        static checkCollision(a, b) {
+            if ((a.x + a.width / 2) > (b.x - b.width / 2) && (a.x - a.width / 2) < (b.x + b.width / 2)) {
+                if ((a.y + a.height / 2) > (b.y - b.height / 2) && (a.y - a.height / 2) < (b.y + b.height / 2)) {
+                    return true;
+                } else {
+                    return false;
+                }
+            } else {
+                return false;
+            }
+        }
+    }
+
     class KeyboardController {
         constructor() {
             this.keys = {
@@ -90,7 +104,7 @@ window.onload = function () {
             this.x = canvas.width / 2;
             this.y = canvas.height / 2;
             this.angle = 0;
-            this.width = 20;
+            this.width = 30;
             this.height = 30;
             this.fireRate = 5;
             this.canFire = true;
@@ -116,9 +130,9 @@ window.onload = function () {
             this.x += this.dx * this.acc;
             this.y += this.dy * this.acc;
 
-            // console.log(Math.sin(this.angle - 90) * Math.PI / 180);
-            // this.x += this.vel / 10 * Math.cos((this.angle - 90) * Math.PI / 180);
-            // this.y += this.vel / 10 * Math.sin((this.angle - 90) * Math.PI / 180);
+            this.dx *= 0.995;
+            this.dy *= 0.995;
+
             if (this.x < 0) {
                 this.x = this.canvas.width;
             } else if (this.x > this.canvas.width) {
@@ -128,6 +142,18 @@ window.onload = function () {
                 this.y = this.canvas.height;
             } else if (this.y > this.canvas.height) {
                 this.y = 0;
+            }
+
+            for (let i = 0; i < this.area.pieces.length; i++) {
+                let piece = this.area.pieces[i];
+                if (piece instanceof Roid === true) {
+                    if (Collider.checkCollision(this, piece) === true) {
+                        this.active = false;
+                        this.area.pieces = [];
+                        this.area.stop();
+                        initAsteroids();
+                    }
+                }
             }
         }
         draw() {
@@ -139,21 +165,20 @@ window.onload = function () {
 
             this.ctx.lineWidth = 2;
             this.ctx.beginPath();
-            this.ctx.moveTo(0, -this.height / 2);
-            this.ctx.lineTo(this.width / 2, this.height / 2);
+            this.ctx.moveTo(0, -this.height / 1.6);
+            this.ctx.lineTo(this.width / 2.3, this.height / 2);
             if (this.thrust) {
                 if (this.flikr > 0) {
                     this.flikr--;
                 } else {
                     this.flikr = 6
                 }
-                console.log(this.flikr);
                 this.ctx.lineTo(this.width / 4, this.height / 2);
                 this.ctx.lineTo(0, this.height * 1.2 + this.flikr * 1.0);
                 this.ctx.lineTo(-this.width / 4, this.height / 2);
                 // this.ctx.lineTo(this.width / 4, this.height / 2);
             }
-            this.ctx.lineTo(-this.width / 2, this.height / 2);
+            this.ctx.lineTo(-this.width / 2.3, this.height / 2);
             this.ctx.closePath();
             this.ctx.stroke();
 
@@ -182,7 +207,8 @@ window.onload = function () {
             this.height = 8;
             this.angle = angle;
             this.counter = 0;
-            this.vel = 8;
+            this.vel = 6;
+            this.acc = 0.2;
             this.dx = dx + (Math.cos((this.angle - 90) * Math.PI / 180)) * this.vel;
             this.dy = dy + (Math.sin((this.angle - 90) * Math.PI / 180)) * this.vel;
         }
@@ -191,11 +217,21 @@ window.onload = function () {
             if (this.counter > 500) {
                 this.active = false;
             }
-            this.dx += 0.5 * Math.cos((this.angle - 90) * Math.PI / 180);
-            this.dy += 0.5 * Math.sin((this.angle - 90) * Math.PI / 180);
+            this.dx += this.acc * Math.cos((this.angle - 90) * Math.PI / 180);
+            this.dy += this.acc * Math.sin((this.angle - 90) * Math.PI / 180);
             this.x += this.dx;
             this.y += this.dy;
             this.height += 0.5;
+
+            for (let i = 0; i < this.area.pieces.length; i++) {
+                let piece = this.area.pieces[i];
+                if (piece instanceof Roid === true) {
+                    if (Collider.checkCollision(this, piece) === true) {
+                        piece.active = false;
+                        this.active = false;
+                    }
+                }
+            }
         }
         draw() {
             this.ctx.save();
@@ -207,6 +243,7 @@ window.onload = function () {
             this.ctx.moveTo(0, -this.height / 2);
             this.ctx.lineTo(0, this.height / 2);
             this.ctx.closePath();
+            this.ctx.fill();
             this.ctx.stroke();
 
             //return
@@ -215,24 +252,39 @@ window.onload = function () {
     }
 
     class Roid {
-        constructor(size, area) {
+        constructor(size, vel, area) {
             this.active = true;
             area.pieces.push(this);
             this.area = area;
             this.canvas = area.canvas;
             this.ctx = area.ctx;
-            this.x = this.canvas.width / 2;
-            this.y = this.canvas.height / 2;
+            this.x = Math.floor(Math.random() * this.canvas.width);
+            this.y = Math.floor(Math.random() * this.canvas.height);
             this.width = size;
             this.height = size;
             this.dx = 0;
             this.dy = 0;
+            this.vel = vel;
             this.rotVel = 1;
-            this.angle = 0;
+            this.angle = Math.floor(Math.random() * 360);
+
+            this.minRad = size * 0.6;
+            this.maxRad = size * 1.0;
+            this.resolution = 12;
+            this.xArr = [];
+            this.yArr = [];
+
+            for (let i = 0; i < this.resolution; i++) {
+                let angle = (360 / this.resolution * i) - 90;
+                let x = Math.sin(angle * Math.PI / 180) * (Math.floor(Math.random() * (this.maxRad - this.minRad) + this.minRad));
+                let y = Math.cos(angle * Math.PI / 180) * (Math.floor(Math.random() * (this.maxRad - this.minRad) + this.minRad));
+                this.xArr.push(x);
+                this.yArr.push(y);
+            }
         }
         update() {
-            this.dx = 0.5 * Math.cos((this.angle - 90) * Math.PI / 180);
-            this.dy = 0.5 * Math.sin((this.angle - 90) * Math.PI / 180);
+            this.dx = this.vel * Math.cos((this.angle - 90) * Math.PI / 180);
+            this.dy = this.vel * Math.sin((this.angle - 90) * Math.PI / 180);
             this.x += this.dx;
             this.y += this.dy;
             if (this.x < 0) {
@@ -251,20 +303,43 @@ window.onload = function () {
             this.ctx.translate(this.x, this.y);
             this.ctx.rotate(this.angle * Math.PI / 180);
 
-            this.ctx.lineWidth = this.width;
-            this.ctx.fillRect(-this.width / 2, 0, this.width, this.height);
+            this.ctx.fillStyle = '#FFFFFF';
+            this.ctx.lineWidth = 2;
+            this.ctx.beginPath();
+            this.ctx.moveTo(this.xArr[0], this.yArr[0]);
+            for (let i = 0; i < this.resolution; i++) {
+                this.ctx.lineTo(this.xArr[i], this.yArr[i]);
+            }
+            this.ctx.closePath();
+            this.ctx.fill();
+            this.ctx.stroke();
 
             //return
             this.ctx.restore();
         }
     }
 
-    let gameArea = new GameArea(EL_CANVAS, INTERVAL);
-    let keyboardController = new KeyboardController();
+    function initAsteroids() {
+        let ship = new Ship(gameArea);
+        let i = 0
+        while (i < 5) {
+            let roid = new Roid(Math.floor(Math.random() * 20 + 30), 0.2, gameArea);
+            if (roid.x < gameArea.canvas.width / 3 || roid.x > gameArea.canvas.width / 3 * 2) {
+                if (roid.y < gameArea.canvas.height / 3 || roid.y > gameArea.canvas.height / 3 * 2) {
+                    i++;
+                    gameArea.pieces.push(roid);
+                } else {
+                    roid.active = false;
+                }
+            } else {
+                roid.active = false;
+            }
+        }
+        gameArea.start();
+    }
+    
+    gameArea = new GameArea(EL_CANVAS, INTERVAL);
+    keyboardController = new KeyboardController();
     keyboardController.addListeners(gameArea.canvas);
-
-    let ship = new Ship(gameArea);
-    let roid = new Roid(40, gameArea);
-
-    gameArea.start();
+    initAsteroids();
 };
