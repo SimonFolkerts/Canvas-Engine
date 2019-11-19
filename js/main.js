@@ -8,13 +8,20 @@ window.onload = function () {
             this.ctx = this.canvas.getContext("2d");
             this.counter = 0;
             this.interval = interval;
+            this.tickInterval = null;
             this.pieces = [];
         }
         start() {
-            this.interval = setInterval(this.update.bind(this), this.interval);
+            this.tickInterval = setInterval(this.update.bind(this), this.interval);
         }
         stop() {
-            clearInterval(this.interval);
+            clearInterval(this.tickInterval);
+        }
+        reset() {
+            this.stop();
+            this.tickInterval = null;
+            this.pieces = [];
+            initAsteroids();
         }
         update() {
             this.counter++;
@@ -149,10 +156,32 @@ window.onload = function () {
                 if (piece instanceof Roid === true) {
                     if (Collider.checkCollision(this, piece) === true) {
                         this.active = false;
-                        this.area.pieces = [];
-                        this.area.stop();
-                        initAsteroids();
+                        this.area.reset();
                     }
+
+                    //TEMP
+                    let opposite = piece.y - this.y;
+                    let adjacent = piece.x - this.x
+                    let angleTo = (Math.atan2(opposite, adjacent) * 180 / Math.PI);
+                    console.log(angleTo);
+                    let hype = Math.sqrt(opposite * opposite + adjacent * adjacent);
+
+                    this.ctx.save();
+                    this.ctx.translate(this.x, this.y);
+                    //draw shape
+
+                    this.ctx.lineWidth = 2;
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(0, 0);
+                    this.ctx.lineTo(Math.cos(angleTo * Math.PI / 180) * hype, Math.sin(angleTo * Math.PI / 180) * hype);
+                    this.ctx.stroke();
+
+                    //return
+                    this.ctx.restore();
+
+
+
+                    //TEMP
                 }
             }
         }
@@ -268,9 +297,9 @@ window.onload = function () {
             this.rotVel = 1;
             this.angle = Math.floor(Math.random() * 360);
 
-            this.minRad = size * 0.6;
+            this.minRad = size * 1.0;
             this.maxRad = size * 1.0;
-            this.resolution = 12;
+            this.resolution = 4;
             this.xArr = [];
             this.yArr = [];
 
@@ -322,7 +351,7 @@ window.onload = function () {
     function initAsteroids() {
         let ship = new Ship(gameArea);
         let i = 0
-        while (i < 5) {
+        while (i < 1) {
             let roid = new Roid(Math.floor(Math.random() * 20 + 30), 0.2, gameArea);
             if (roid.x < gameArea.canvas.width / 3 || roid.x > gameArea.canvas.width / 3 * 2) {
                 if (roid.y < gameArea.canvas.height / 3 || roid.y > gameArea.canvas.height / 3 * 2) {
@@ -337,7 +366,7 @@ window.onload = function () {
         }
         gameArea.start();
     }
-    
+
     gameArea = new GameArea(EL_CANVAS, INTERVAL);
     keyboardController = new KeyboardController();
     keyboardController.addListeners(gameArea.canvas);
