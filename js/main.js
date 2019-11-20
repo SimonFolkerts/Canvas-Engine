@@ -29,16 +29,29 @@ window.onload = function () {
             this.pieces = this.pieces.filter(piece => piece.active === true);
             for (let i = 0; i < this.pieces.length; i++) {
                 const piece = this.pieces[i];
-                piece.update(keyboardController.keys);
-                piece.draw();
+                if (piece.active) {
+                    piece.update(keyboardController.keys);
+                    piece.draw();
+                }
             }
+            // console.log(this.pieces);
         }
     }
 
+    /*
+    .######...#######..##.......##.......####.########..########.########.
+    ##....##.##.....##.##.......##........##..##.....##.##.......##.....##
+    ##.......##.....##.##.......##........##..##.....##.##.......##.....##
+    ##.......##.....##.##.......##........##..##.....##.######...########.
+    ##.......##.....##.##.......##........##..##.....##.##.......##...##..
+    ##....##.##.....##.##.......##........##..##.....##.##.......##....##.
+    .######...#######..########.########.####.########..########.##.....##
+    */
     class Collider {
         static checkCollision(a, b) {
             if ((a.x + a.width / 2) > (b.x - b.width / 2) && (a.x - a.width / 2) < (b.x + b.width / 2)) {
                 if ((a.y + a.height / 2) > (b.y - b.height / 2) && (a.y - a.height / 2) < (b.y + b.height / 2)) {
+                    console.log('bang');
                     return true;
                 } else {
                     return false;
@@ -48,6 +61,16 @@ window.onload = function () {
             }
         }
     }
+
+    /*
+    ##....##.########.##....##..######.
+    ##...##..##........##..##..##....##
+    ##..##...##.........####...##......
+    #####....######......##.....######.
+    ##..##...##..........##..........##
+    ##...##..##..........##....##....##
+    ##....##.########....##.....######.
+    */
 
     class KeyboardController {
         constructor() {
@@ -95,6 +118,16 @@ window.onload = function () {
             }
         }
     }
+
+    /*
+    .######..##.....##.####.########.
+    ##....##.##.....##..##..##.....##
+    ##.......##.....##..##..##.....##
+    .######..#########..##..########.
+    ......##.##.....##..##..##.......
+    ##....##.##.....##..##..##.......
+    .######..##.....##.####.##.......
+    */
 
     class Ship {
         constructor(area) {
@@ -163,7 +196,6 @@ window.onload = function () {
                     let opposite = piece.y - this.y;
                     let adjacent = piece.x - this.x
                     let angleTo = (Math.atan2(opposite, adjacent) * 180 / Math.PI);
-                    console.log(angleTo);
                     let hype = Math.sqrt(opposite * opposite + adjacent * adjacent);
 
                     this.ctx.save();
@@ -215,13 +247,26 @@ window.onload = function () {
             this.ctx.restore();
         }
         pow() {
-            let missile = new Missile(this.x, this.y, this.dx * this.acc, this.dy * this.acc, this.angle, this.area);
-            this.canFire = false;
-            setTimeout(function () {
-                this.canFire = true;
-            }.bind(this), (1 / this.fireRate) * 1000);
+            if (this.canFire) {
+                let missile = new Missile(this.x, this.y, this.dx * this.acc, this.dy * this.acc, this.angle, this.area);
+                this.canFire = false;
+
+                setTimeout(function () {
+                    this.canFire = true;
+                }.bind(this), (1 / this.fireRate) * 1000);
+            }
         }
     }
+
+    /*
+    ##.....##.####..######...######..####.##.......########
+    ###...###..##..##....##.##....##..##..##.......##......
+    ####.####..##..##.......##........##..##.......##......
+    ##.###.##..##...######...######...##..##.......######..
+    ##.....##..##........##.......##..##..##.......##......
+    ##.....##..##..##....##.##....##..##..##.......##......
+    ##.....##.####..######...######..####.########.########
+    */
 
     class Missile {
         constructor(x, y, dx, dy, angle, area) {
@@ -242,25 +287,26 @@ window.onload = function () {
             this.dy = dy + (Math.sin((this.angle - 90) * Math.PI / 180)) * this.vel;
         }
         update() {
+            for (let i = 0; i < this.area.pieces.length; i++) {
+                let piece = this.area.pieces[i];
+                if (piece instanceof Roid === true) {
+                    if (this.active && Collider.checkCollision(this, piece) === true) {
+                        this.active = false;
+                        piece.split();
+                    }
+                }
+            }
             this.counter++;
-            if (this.counter > 500) {
+            if (this.counter > 200) {
                 this.active = false;
             }
             this.dx += this.acc * Math.cos((this.angle - 90) * Math.PI / 180);
             this.dy += this.acc * Math.sin((this.angle - 90) * Math.PI / 180);
             this.x += this.dx;
             this.y += this.dy;
-            this.height += 0.5;
+            this.height += 0;
 
-            for (let i = 0; i < this.area.pieces.length; i++) {
-                let piece = this.area.pieces[i];
-                if (piece instanceof Roid === true) {
-                    if (Collider.checkCollision(this, piece) === true) {
-                        piece.active = false;
-                        this.active = false;
-                    }
-                }
-            }
+            
         }
         draw() {
             this.ctx.save();
@@ -280,15 +326,26 @@ window.onload = function () {
         }
     }
 
+    /*
+    ########...#######..####.########.
+    ##.....##.##.....##..##..##.....##
+    ##.....##.##.....##..##..##.....##
+    ########..##.....##..##..##.....##
+    ##...##...##.....##..##..##.....##
+    ##....##..##.....##..##..##.....##
+    ##.....##..#######..####.########.
+    */
+
     class Roid {
-        constructor(size, vel, area) {
+        constructor(x, y, size, vel, area) {
             this.active = true;
             area.pieces.push(this);
             this.area = area;
             this.canvas = area.canvas;
             this.ctx = area.ctx;
-            this.x = Math.floor(Math.random() * this.canvas.width);
-            this.y = Math.floor(Math.random() * this.canvas.height);
+            this.x = x;
+            this.y = y;
+            this.size = size;
             this.width = size;
             this.height = size;
             this.dx = 0;
@@ -297,9 +354,9 @@ window.onload = function () {
             this.rotVel = 1;
             this.angle = Math.floor(Math.random() * 360);
 
-            this.minRad = size * 1.0;
-            this.maxRad = size * 1.0;
-            this.resolution = 4;
+            this.minRad = size * 0.7;
+            this.maxRad = size * 1.1;
+            this.resolution = 10;
             this.xArr = [];
             this.yArr = [];
 
@@ -309,6 +366,13 @@ window.onload = function () {
                 let y = Math.cos(angle * Math.PI / 180) * (Math.floor(Math.random() * (this.maxRad - this.minRad) + this.minRad));
                 this.xArr.push(x);
                 this.yArr.push(y);
+            }
+        }
+        split() {
+            this.active = false;
+            if (this.size > 8) {
+                let newSize = this.size / 2;
+                new Roid(this.x, this.y, Math.floor(Math.random() * newSize / 3 + newSize), 0.2, this.area);
             }
         }
         update() {
@@ -351,12 +415,11 @@ window.onload = function () {
     function initAsteroids() {
         let ship = new Ship(gameArea);
         let i = 0
-        while (i < 1) {
-            let roid = new Roid(Math.floor(Math.random() * 20 + 30), 0.2, gameArea);
+        while (i < 3) {
+            let roid = new Roid(Math.floor(Math.random() * this.canvas.width), Math.floor(Math.random() * this.canvas.height), Math.floor(Math.random() * 20 + 50), 0.2, gameArea);
             if (roid.x < gameArea.canvas.width / 3 || roid.x > gameArea.canvas.width / 3 * 2) {
                 if (roid.y < gameArea.canvas.height / 3 || roid.y > gameArea.canvas.height / 3 * 2) {
                     i++;
-                    gameArea.pieces.push(roid);
                 } else {
                     roid.active = false;
                 }
