@@ -10,6 +10,7 @@ window.onload = function () {
             this.interval = interval;
             this.tickInterval = null;
             this.pieces = [];
+            this.level = 0;
         }
         start() {
             this.tickInterval = setInterval(this.update.bind(this), this.interval);
@@ -27,6 +28,10 @@ window.onload = function () {
             this.counter++;
             this.ctx.clearRect(0, 0, canvas.width, canvas.height);
             this.pieces = this.pieces.filter(piece => piece.active === true);
+            let roids = this.pieces.filter(piece => piece instanceof Roid);
+            if (roids.length <= 0) {
+                this.incrementLevel();
+            }
             for (let i = 0; i < this.pieces.length; i++) {
                 const piece = this.pieces[i];
                 if (piece.active) {
@@ -34,7 +39,10 @@ window.onload = function () {
                     piece.draw();
                 }
             }
-            // console.log(this.pieces);
+        }
+        incrementLevel() {
+            this.level++;
+            this.reset();
         }
     }
 
@@ -51,7 +59,6 @@ window.onload = function () {
         static checkCollision(a, b) {
             if ((a.x + a.width / 2) > (b.x - b.width / 2) && (a.x - a.width / 2) < (b.x + b.width / 2)) {
                 if ((a.y + a.height / 2) > (b.y - b.height / 2) && (a.y - a.height / 2) < (b.y + b.height / 2)) {
-                    console.log('bang');
                     return true;
                 } else {
                     return false;
@@ -190,30 +197,31 @@ window.onload = function () {
                     if (Collider.checkCollision(this, piece) === true) {
                         this.active = false;
                         this.area.reset();
+                        this.area.level = 0;
                     }
 
-                    //TEMP
-                    let opposite = piece.y - this.y;
-                    let adjacent = piece.x - this.x
-                    let angleTo = (Math.atan2(opposite, adjacent) * 180 / Math.PI);
-                    let hype = Math.sqrt(opposite * opposite + adjacent * adjacent);
+                    // //TEMP
+                    // let opposite = piece.y - this.y;
+                    // let adjacent = piece.x - this.x
+                    // let angleTo = (Math.atan2(opposite, adjacent) * 180 / Math.PI);
+                    // let hype = Math.sqrt(opposite * opposite + adjacent * adjacent);
 
-                    this.ctx.save();
-                    this.ctx.translate(this.x, this.y);
-                    //draw shape
+                    // this.ctx.save();
+                    // this.ctx.translate(this.x, this.y);
+                    // //draw shape
 
-                    this.ctx.lineWidth = 2;
-                    this.ctx.beginPath();
-                    this.ctx.moveTo(0, 0);
-                    this.ctx.lineTo(Math.cos(angleTo * Math.PI / 180) * hype, Math.sin(angleTo * Math.PI / 180) * hype);
-                    this.ctx.stroke();
+                    // this.ctx.lineWidth = 2;
+                    // this.ctx.beginPath();
+                    // this.ctx.moveTo(0, 0);
+                    // this.ctx.lineTo(Math.cos(angleTo * Math.PI / 180) * hype, Math.sin(angleTo * Math.PI / 180) * hype);
+                    // this.ctx.stroke();
 
-                    //return
-                    this.ctx.restore();
+                    // //return
+                    // this.ctx.restore();
 
 
 
-                    //TEMP
+                    // //TEMP
                 }
             }
         }
@@ -224,6 +232,7 @@ window.onload = function () {
             this.ctx.rotate(this.angle * Math.PI / 180);
             //draw shape
 
+            this.ctx.strokeStyle = '#FFFFFF';
             this.ctx.lineWidth = 2;
             this.ctx.beginPath();
             this.ctx.moveTo(0, -this.height / 1.6);
@@ -306,13 +315,13 @@ window.onload = function () {
             this.y += this.dy;
             this.height += 0;
 
-            
+
         }
         draw() {
             this.ctx.save();
             this.ctx.translate(this.x, this.y);
             this.ctx.rotate(this.angle * Math.PI / 180);
-
+            this.ctx.strokeStyle = '#FFFFFF';
             this.ctx.lineWidth = this.width;
             this.ctx.beginPath();
             this.ctx.moveTo(0, -this.height / 2);
@@ -354,7 +363,7 @@ window.onload = function () {
             this.rotVel = 1;
             this.angle = Math.floor(Math.random() * 360);
 
-            this.minRad = size * 0.7;
+            this.minRad = size * 0.8;
             this.maxRad = size * 1.1;
             this.resolution = 10;
             this.xArr = [];
@@ -370,9 +379,13 @@ window.onload = function () {
         }
         split() {
             this.active = false;
-            if (this.size > 8) {
-                let newSize = this.size / 2;
-                new Roid(this.x, this.y, Math.floor(Math.random() * newSize / 3 + newSize), 0.2, this.area);
+            if (this.size > 25) {
+                for (let i = 0; i < 2; i++) {
+                    let newSize = this.size / 2;
+                    let newX = this.x + Math.floor(Math.random() * 100 - 50);
+                    let newY = this.y + Math.floor(Math.random() * 100 - 50);
+                    new Roid(newX, newY, Math.floor(Math.random() * newSize / 2 + newSize), this.vel * 1.2, this.area);
+                }
             }
         }
         update() {
@@ -396,7 +409,8 @@ window.onload = function () {
             this.ctx.translate(this.x, this.y);
             this.ctx.rotate(this.angle * Math.PI / 180);
 
-            this.ctx.fillStyle = '#FFFFFF';
+            this.ctx.fillStyle = '#000000';
+            this.ctx.strokeStyle = '#FFFFFF';
             this.ctx.lineWidth = 2;
             this.ctx.beginPath();
             this.ctx.moveTo(this.xArr[0], this.yArr[0]);
@@ -415,8 +429,8 @@ window.onload = function () {
     function initAsteroids() {
         let ship = new Ship(gameArea);
         let i = 0
-        while (i < 3) {
-            let roid = new Roid(Math.floor(Math.random() * this.canvas.width), Math.floor(Math.random() * this.canvas.height), Math.floor(Math.random() * 20 + 50), 0.2, gameArea);
+        while (i < 5 + gameArea.level * 3) {
+            let roid = new Roid(Math.floor(Math.random() * this.canvas.width), Math.floor(Math.random() * this.canvas.height), Math.floor(Math.random() * 20 + 50), 0.4, gameArea);
             if (roid.x < gameArea.canvas.width / 3 || roid.x > gameArea.canvas.width / 3 * 2) {
                 if (roid.y < gameArea.canvas.height / 3 || roid.y > gameArea.canvas.height / 3 * 2) {
                     i++;
